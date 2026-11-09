@@ -15,12 +15,19 @@
 - Per-device color is now used by the bar renderer.
 - Low battery (≤20%) turns the fill red; charging turns it green.
 - Dark/light taskbar themes choose a readable border and text colour.
+- Plugin metadata now reports the repository URL; the DLL carries a generated
+  version resource (file/product version, description, copyright).
+- `settings_tests` covers INI defaults, save/load round-trip and duplicate
+  section regressions.
 
 ### Changed
 
 - `display_mode` now defaults to `bar`. `text` remains available for the old
   host-rendered `G03 84%` style.
 - `fill` and `outline` are drawn with GDI; no icon resources or GDI+ dependency.
+- The plugin version is generated from the CMake project version, so
+  `TMI_VERSION`, the DLL resource and the release archive stay in sync.
+- README now includes a real taskbar screenshot and the new test targets.
 
 ### Fixed
 

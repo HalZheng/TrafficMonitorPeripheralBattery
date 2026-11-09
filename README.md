@@ -4,6 +4,10 @@
 
 > A TrafficMonitor plugin that shows wireless mouse, keyboard and gamepad battery levels directly in the Windows taskbar. It reads vendor HID reports from the USB receiver and does not require the vendor's background software.
 
+![任务栏效果](docs/images/taskbar.png)
+
+上图是任务栏实际效果：`G03` 鼠标、`B87` 键盘显示实时电量，未安装飞智空间站时 `Direwolf` 显示 `--`。
+
 ## 支持设备
 
 | 设备 | VID:PID | HID 接口 | 状态 |
@@ -62,6 +66,7 @@ scripts\build.ps1 -SkipX86
 bin\x64\PeripheralBatteryPlugin.dll
 bin\x64\hid-probe.exe
 bin\x64\protocol_tests.exe
+bin\x64\settings_tests.exe
 bin\x86\PeripheralBatteryPlugin.dll
 ```
 
@@ -172,6 +177,7 @@ src/plugin/*               TrafficMonitor ITMPlugin / IPluginItem / 设置
 
 ```powershell
 bin\x64\protocol_tests.exe
+bin\x64\settings_tests.exe
 ```
 
 测试覆盖：
@@ -180,6 +186,8 @@ bin\x64\protocol_tests.exe
 - iLovBee B87 回包电量解析。
 - BYCOMBO 0x4A / 0x0A 兼容帧。
 - Juxing 请求和 G03 Pro 回包电量解析。
+- Flydigi 空间站 protobuf 回包解析。
+- 设置 INI 的默认值、存盘回读，以及重复 `[plugin]` / `[device:...]` 段落的回归检查。
 
 ## 许可证
 

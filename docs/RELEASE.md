@@ -2,8 +2,8 @@
 
 ## Versioning
 
-- Update `project(... VERSION ...)` in `CMakeLists.txt`.
-- Update `Plugin::GetInfo(TMI_VERSION)` in `src/plugin/Plugin.cpp`.
+- Update `project(... VERSION ...)` in `CMakeLists.txt`. The plugin's
+  `TMI_VERSION` and the DLL version resource are generated from this value.
 - Add a `CHANGELOG.md` section.
 - Update `docs/PROTOCOLS.md` and the README table for new devices.
 
@@ -19,6 +19,7 @@ This produces:
 bin\x64\PeripheralBatteryPlugin.dll
 bin\x86\PeripheralBatteryPlugin.dll
 bin\x64\protocol_tests.exe
+bin\x64\settings_tests.exe
 bin\x64\hid-probe.exe
 ```
 
@@ -26,6 +27,7 @@ bin\x64\hid-probe.exe
 
 ```powershell
 bin\x64\protocol_tests.exe
+bin\x64\settings_tests.exe
 ```
 
 Manual smoke test:
@@ -48,4 +50,4 @@ contains the x64/x86 DLLs plus README, LICENSE, NOTICE and CHANGELOG.
 ## GitHub Actions
 
 `.github/workflows/build.yml` builds x64 and x86 on `windows-latest`, runs the
-protocol tests for x64, and uploads the DLLs as artifacts.
+protocol and settings tests for x64, and uploads the DLLs as artifacts.

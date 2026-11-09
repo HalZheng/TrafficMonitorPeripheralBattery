@@ -3,6 +3,7 @@
 #include "OptionsDialog.h"
 
 #include "../util/PathUtil.h"
+#include "Version.h"
 
 #include <windows.h>
 #include <shellapi.h>
@@ -133,9 +134,9 @@ namespace pb
         case TMI_COPYRIGHT:
             return L"MIT";
         case TMI_VERSION:
-            return L"1.2.0";
+            return TMB_VERSION_WSTRING;
         case TMI_URL:
-            return L"";
+            return TMB_REPOSITORY_URL;
         default:
             return L"";
         }

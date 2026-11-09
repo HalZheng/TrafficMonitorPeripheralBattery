@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(TrafficMonitorPeripheralBattery VERSION 1.2.0 LANGUAGES CXX)
+project(TrafficMonitorPeripheralBattery VERSION 1.2.0 LANGUAGES CXX RC)
+
+configure_file(res/version.rc.in
+    "${CMAKE_BINARY_DIR}/generated/version.rc" @ONLY)
+configure_file(src/Version.h.in
+    "${CMAKE_BINARY_DIR}/generated/Version.h" @ONLY)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -51,6 +56,11 @@ add_library(PeripheralBatteryPlugin SHARED
     src/plugin/BatteryItem.cpp
     src/plugin/OptionsDialog.cpp
     src/plugin/Settings.cpp
+    "${CMAKE_BINARY_DIR}/generated/version.rc"
+)
+
+target_include_directories(PeripheralBatteryPlugin PRIVATE
+    "${CMAKE_BINARY_DIR}/generated"
 )
 
 target_link_libraries(PeripheralBatteryPlugin PRIVATE
@@ -84,10 +94,18 @@ add_executable(protocol_tests
 
 target_link_libraries(protocol_tests PRIVATE peripheral_core)
 
+add_executable(settings_tests
+    tests/settings_tests.cpp
+    src/plugin/Settings.cpp
+)
+
+target_link_libraries(settings_tests PRIVATE peripheral_core)
+
 enable_testing()
 add_test(NAME protocol_tests COMMAND protocol_tests)
+add_test(NAME settings_tests COMMAND settings_tests)
 
-foreach(target PeripheralBatteryPlugin hid-probe plugin-host-test protocol_tests)
+foreach(target PeripheralBatteryPlugin hid-probe plugin-host-test protocol_tests settings_tests)
     set_target_properties(${target} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${PB_OUTPUT_DIR}"
         RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PB_OUTPUT_DIR}"
