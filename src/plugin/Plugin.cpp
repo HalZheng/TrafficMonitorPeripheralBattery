@@ -30,9 +30,28 @@ namespace pb
             CreateDirectoryW(m_configPath.substr(0, slash).c_str(), nullptr);
 
         m_settings.Load(m_configPath, m_registry);
-        // Persist defaults for newly added devices so users can discover and
-        // edit every supported item in the generated INI.
-        m_settings.Save(m_configPath, m_registry);
+
+        // Persist defaults for a new file or for devices added by an update,
+        // but avoid rewriting an existing file on every start so hand-written
+        // comments and unknown keys survive.
+        bool needsSave = !FileExists(m_configPath);
+        if (!needsSave)
+        {
+            for (const DeviceDescriptor& device : m_registry.All())
+            {
+                std::wstring section = L"device:" + device.id;
+                wchar_t buffer[8] = {};
+                if (GetPrivateProfileSectionW(section.c_str(), buffer,
+                    static_cast<DWORD>(sizeof(buffer) / sizeof(buffer[0])),
+                    m_configPath.c_str()) == 0)
+                {
+                    needsSave = true;
+                    break;
+                }
+            }
+        }
+        if (needsSave)
+            m_settings.Save(m_configPath, m_registry);
 
         BuildItems();
         m_manager.Start();

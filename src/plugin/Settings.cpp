@@ -130,16 +130,18 @@ namespace pb
         if (path.empty())
             return;
 
-        // Rewrite the whole file. WritePrivateProfileStringW appends a new
-        // section when an existing INI was saved as UTF-8 with BOM, which
-        // produces duplicated [plugin]/[device:...] blocks after editing.
-        DeleteFileW(path.c_str());
+        // Rewrite into a temporary file and replace the target atomically.
+        // WritePrivateProfileStringW appends a new section when an existing INI
+        // was saved as UTF-8 with BOM, which produces duplicated
+        // [plugin]/[device:...] blocks after editing.
+        std::wstring temp = path + L".tmp";
+        DeleteFileW(temp.c_str());
 
-        WriteInt(path, L"plugin", L"refresh_interval_seconds", refreshIntervalSeconds);
-        WriteInt(path, L"plugin", L"max_devices", maxDevices);
-        WriteString(path, L"plugin", L"priority_mode", priorityMode);
-        WriteBool(path, L"plugin", L"show_offline", showOffline);
-        WriteString(path, L"plugin", L"display_mode", displayMode);
+        WriteInt(temp, L"plugin", L"refresh_interval_seconds", refreshIntervalSeconds);
+        WriteInt(temp, L"plugin", L"max_devices", maxDevices);
+        WriteString(temp, L"plugin", L"priority_mode", priorityMode);
+        WriteBool(temp, L"plugin", L"show_offline", showOffline);
+        WriteString(temp, L"plugin", L"display_mode", displayMode);
 
         int index = 0;
         for (const DeviceDescriptor& device : registry.All())
@@ -149,12 +151,18 @@ namespace pb
             DeviceSettings fallback = DefaultFor(device, index);
             const DeviceSettings& effective = settings.name.empty() ? fallback : settings;
 
-            WriteBool(path, section.c_str(), L"enabled", effective.enabled);
-            WriteString(path, section.c_str(), L"name", effective.name);
-            WriteString(path, section.c_str(), L"label", effective.label);
-            WriteInt(path, section.c_str(), L"priority", effective.priority);
-            WriteString(path, section.c_str(), L"color", effective.color);
+            WriteBool(temp, section.c_str(), L"enabled", effective.enabled);
+            WriteString(temp, section.c_str(), L"name", effective.name);
+            WriteString(temp, section.c_str(), L"label", effective.label);
+            WriteInt(temp, section.c_str(), L"priority", effective.priority);
+            WriteString(temp, section.c_str(), L"color", effective.color);
             ++index;
+        }
+
+        if (!MoveFileExW(temp.c_str(), path.c_str(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+        {
+            DeleteFileW(temp.c_str());
         }
     }
 

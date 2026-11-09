@@ -13,6 +13,8 @@
 ```
 src/core/HidTransport
     SetupAPI enumeration, HID caps, overlapped read/write/feature with timeouts.
+    Caches the device path per VID/PID/usage and only re-enumerates when the
+    cached path stops opening.
 
 src/protocols/*
     IProtocol implementations. One class per protocol family, not per model.
@@ -23,6 +25,7 @@ src/core/DeviceRegistry
 
 src/core/DeviceManager
     Owns the polling worker thread and a thread-safe snapshot of readings.
+    Failed devices back off exponentially instead of blocking every cycle.
 
 src/plugin/*
     ITMPlugin / IPluginItem mapping, settings file, plugin commands.
@@ -47,6 +50,8 @@ src/plugin/*
 - `DataRequired` and `GetItemValueText` are UI-thread only; no HID calls there.
 - Every HID read/write has a timeout. A sleeping device answers with `--` after
   a bounded retry window.
+- After a failed read the device is retried with exponential backoff (up to
+  300 s). “立即刷新” clears the backoff and retries immediately.
 
 ## Non-HID transports
 

@@ -6,6 +6,8 @@
 
 #include <cstdint>
 #include <cstring>
+#include <map>
+#include <mutex>
 
 #pragma comment(lib, "setupapi.lib")
 #pragma comment(lib, "hid.lib")
@@ -14,6 +16,37 @@ namespace pb
 {
     namespace
     {
+        std::mutex g_pathCacheMutex;
+        std::map<std::wstring, std::wstring> g_pathCache;
+
+        std::wstring CacheKey(unsigned short vid, unsigned short pid,
+            unsigned short usagePage, unsigned short usage)
+        {
+            wchar_t buffer[64] = {};
+            swprintf_s(buffer, L"%04X:%04X:%04X:%04X",
+                vid, pid, usagePage, usage);
+            return buffer;
+        }
+
+        std::wstring CachedPath(const std::wstring& key)
+        {
+            std::lock_guard<std::mutex> lock(g_pathCacheMutex);
+            auto iter = g_pathCache.find(key);
+            return iter == g_pathCache.end() ? L"" : iter->second;
+        }
+
+        void StorePath(const std::wstring& key, const std::wstring& path)
+        {
+            std::lock_guard<std::mutex> lock(g_pathCacheMutex);
+            g_pathCache[key] = path;
+        }
+
+        void DropPath(const std::wstring& key)
+        {
+            std::lock_guard<std::mutex> lock(g_pathCacheMutex);
+            g_pathCache.erase(key);
+        }
+
         std::wstring ReadHidString(HANDLE handle,
             BOOLEAN(WINAPI* getter)(HANDLE, PVOID, ULONG))
         {
@@ -72,13 +105,30 @@ namespace pb
     bool HidDevice::Open(unsigned short vid, unsigned short pid,
         unsigned short usagePage, unsigned short usage, bool overlapped)
     {
+        const std::wstring key = CacheKey(vid, pid, usagePage, usage);
+
+        // Reuse the last known device path. SetupAPI enumeration is expensive
+        // and opens every HID interface, so only fall back to it when the
+        // cached path is missing or no longer opens (unplug/replug).
+        std::wstring cached = CachedPath(key);
+        if (!cached.empty())
+        {
+            if (OpenPath(cached, overlapped))
+                return true;
+            DropPath(key);
+        }
+
         std::vector<HidInterfaceInfo> interfaces = EnumerateHidInterfaces();
         for (const HidInterfaceInfo& info : interfaces)
         {
             if (info.vid == vid && info.pid == pid &&
                 info.usagePage == usagePage && info.usage == usage)
             {
-                return OpenPath(info.path, overlapped);
+                if (OpenPath(info.path, overlapped))
+                {
+                    StorePath(key, info.path);
+                    return true;
+                }
             }
         }
         return false;

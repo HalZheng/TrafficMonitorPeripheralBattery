@@ -144,6 +144,7 @@ int main()
 
     settings.Save(file, registry);
     Check(FilePresent(file), "save creates the ini file");
+    Check(!FilePresent(file + L".tmp"), "save leaves no temporary file");
 
     std::wstring text = ReadText(file);
     Check(CountOccurrences(text, L"[plugin]") == 1,

@@ -19,6 +19,10 @@
   version resource (file/product version, description, copyright).
 - `settings_tests` covers INI defaults, save/load round-trip and duplicate
   section regressions.
+- HID device paths are cached per VID/PID/usage, so polling no longer runs a
+  full SetupAPI enumeration every cycle.
+- Offline devices use exponential retry backoff (up to 300 s); “立即刷新”
+  clears it.
 
 ### Changed
 
@@ -34,6 +38,9 @@
 - Settings were written with a UTF-8 BOM, so `WritePrivateProfileStringW` kept
   appending duplicate `[plugin]` and `[device:...]` sections. The file is now
   rewritten from scratch on every save.
+- Settings are written to a temporary file and atomically replace the target,
+  and an existing INI is no longer rewritten on every startup. Hand-written
+  comments and unknown keys survive normal restarts.
 
 ## [1.1.0] - 2026-11-09
 
