@@ -1,0 +1,11 @@
+build/
+bin/
+dist/
+.vs/
+*.user
+*.suo
+*.VC.db
+*.opendb
+*.log
+tools/TrafficMonitor/
+.screenshots/
