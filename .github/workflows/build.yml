@@ -28,15 +28,8 @@ jobs:
       - name: Configure
         shell: pwsh
         run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          if (-not $vs) {
-              throw 'no Visual Studio instance with the C++ toolset was found'
-          }
-          $ninja = Join-Path $vs 'Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe'
-          if (Test-Path $ninja) {
-              $env:PATH = "$(Split-Path $ninja);$env:PATH"
-              cmake -S . -B build/${{ matrix.arch }} -G Ninja -DCMAKE_MAKE_PROGRAM=$ninja -DCMAKE_BUILD_TYPE=Release
+          if (Get-Command ninja -ErrorAction SilentlyContinue) {
+              cmake -S . -B build/${{ matrix.arch }} -G Ninja -DCMAKE_BUILD_TYPE=Release
           } else {
               cmake -S . -B build/${{ matrix.arch }} -G 'NMake Makefiles' -DCMAKE_BUILD_TYPE=Release
           }
