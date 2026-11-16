@@ -6,7 +6,7 @@ Add to `src/core/DeviceRegistry.cpp`:
 
 ```cpp
 m_devices.push_back(DeviceDescriptor{
-    L"vendor_model",          // stable ASCII ID, also the TrafficMonitor item ID
+    L"vendor_model",          // stable ASCII device ID (INI section key)
     L"Vendor Model",          // name shown in TrafficMonitor settings
     L"Vendor",                // brand
     DeviceKind::Mouse,        // Mouse / Keyboard / Gamepad / Headset / Other
@@ -14,10 +14,18 @@ m_devices.push_back(DeviceDescriptor{
     0xFF00, 0x0002,           // usage page / usage of the vendor collection
     L"example_protocol",      // protocol registered in ProtocolRegistry
     30,                       // priority: lower sorts first
-    true,                     // enabled by default
+    true,                     // visible by default (not hidden)
     L"VM"                     // short taskbar label
 });
 ```
+
+The host only ever sees one plugin item (`peripheral_battery`). The device ID
+is internal: it names the INI section and identifies a battery group inside
+that item. Never rename an existing ID without a migration note.
+
+For a non-HID transport, override `IProtocol::IsPresent()` so discovery can
+tell whether the receiver/service is attached; the default implementation
+matches the enumerated HID interfaces by VID/PID/usage.
 
 ## 2. Protocol skeleton
 
@@ -35,6 +43,8 @@ namespace pb
     public:
         const wchar_t* Id() const override { return L"example_protocol"; }
         BatteryReading Read(const DeviceDescriptor& device) const override;
+        // bool IsPresent(const DeviceDescriptor&,
+        //     const std::vector<HidInterfaceInfo>&) const override;  // non-HID only
 
         static std::vector<unsigned char> BuildRequest(unsigned short outputLength);
         static bool ParseResponse(const std::vector<unsigned char>& response,
@@ -51,12 +61,12 @@ Register(std::unique_ptr<IProtocol>(new ExampleProtocol()));
 
 ## 3. User settings
 
-The plugin creates defaults automatically. Users can override them in
-`PeripheralBatteryPlugin.ini`:
+Sections are created lazily, once the device is discovered or the user edits
+it. Users can override the defaults in `PeripheralBatteryPlugin.ini`:
 
 ```ini
 [device:vendor_model]
-enabled=true
+hidden=false
 name=Vendor Model
 label=VM
 priority=30

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(TrafficMonitorPeripheralBattery VERSION 1.2.0 LANGUAGES CXX RC)
+project(TrafficMonitorPeripheralBattery VERSION 1.5.6 LANGUAGES CXX RC)
 
 configure_file(res/version.rc.in
     "${CMAKE_BINARY_DIR}/generated/version.rc" @ONLY)
@@ -29,9 +29,11 @@ add_library(peripheral_core STATIC
     src/core/DeviceRegistry.cpp
     src/core/HidTransport.cpp
     src/core/DeviceManager.cpp
+    src/protocols/IProtocol.cpp
     src/protocols/ProtocolRegistry.cpp
     src/protocols/JuxingProtocol.cpp
     src/protocols/AulaBycomboProtocol.cpp
+    src/protocols/Compx17Protocol.cpp
     src/protocols/FlydigiPipeProtocol.cpp
     src/util/PathUtil.cpp
 )
@@ -54,6 +56,7 @@ add_library(PeripheralBatteryPlugin SHARED
     src/dllmain.cpp
     src/plugin/Plugin.cpp
     src/plugin/BatteryItem.cpp
+    src/plugin/BatteryGroupItem.cpp
     src/plugin/OptionsDialog.cpp
     src/plugin/Settings.cpp
     "${CMAKE_BINARY_DIR}/generated/version.rc"
@@ -101,11 +104,20 @@ add_executable(settings_tests
 
 target_link_libraries(settings_tests PRIVATE peripheral_core)
 
+add_executable(display_tests
+    tests/display_tests.cpp
+    src/plugin/BatteryItem.cpp
+    src/plugin/BatteryGroupItem.cpp
+)
+
+target_link_libraries(display_tests PRIVATE peripheral_core gdi32)
+
 enable_testing()
 add_test(NAME protocol_tests COMMAND protocol_tests)
 add_test(NAME settings_tests COMMAND settings_tests)
+add_test(NAME display_tests COMMAND display_tests)
 
-foreach(target PeripheralBatteryPlugin hid-probe plugin-host-test protocol_tests settings_tests)
+foreach(target PeripheralBatteryPlugin hid-probe plugin-host-test protocol_tests settings_tests display_tests)
     set_target_properties(${target} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${PB_OUTPUT_DIR}"
         RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PB_OUTPUT_DIR}"

@@ -10,7 +10,47 @@ public open-source implementations and verified on real hardware where marked.
 | `juxing` | AUSDOM G03 Pro 8K | `363C:FF99` | `FFA0/0002` | output report 11, `13 00 00` | `0A 13 xx 00 ...` | byte 18; charging byte 17 |
 | `aula_bycombo` | iLovBee B87 | `3554:FA09` | `FF02/0002` | report `13`, command `05`, checksum | `13 05 01 00 0A ...` | byte 10 |
 | `aula_bycombo` | BYCOMBO family | various | `FF02/0002` | report `13`, command `05` or `CA` | `13 4A ...` / `13 0A ...` | byte 5 / byte 6 |
+| `compx_17` | ATK Dragonfly A9 Plus 2.0 | `373B:10C9` | `FF02/0002`, 17-byte collection | `08 04 ... 49` | `08 04 00 00 00 02 <pct> ...` | byte 6; charging byte 7; big-endian mV bytes 8–9 |
 | `flydigi_pipe` | Flydigi Direwolf 4 / APEX | `045E:028E` (XInput) | 飞智空间站命名管道 | `08 81 20 1A 00` | protobuf `IpcResult` | 0–6 档 |
+
+## Compx 17-byte (ATK Dragonfly A9 Plus 2.0)
+
+- Receiver: `373B:10C9`, product string `NK mouse NANO dongle`.
+- The receiver exposes **two** `FF02/0002` collections: a 20-byte one
+  (`col04`) and a 17-byte one (`col05`). Only the 17-byte collection accepts
+  the frame — writing 20 bytes to `col04` fails. The descriptor therefore
+  sets `reportLength = 17` so `HidDevice::Open` picks the right collection.
+- Input/output length: 17 bytes, report ID `0x08`.
+- Request (17 bytes, everything else zero):
+
+```text
+08 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 49
+^^ report ID                                  ^^ checksum
+   ^^ command 0x04 = get battery
+```
+
+- Checksum: the sum of all 17 bytes, low 8 bits, must equal `0x55`.
+- Live reply (75%, 3910 mV, discharging):
+
+```text
+08 04 00 00 00 02 4B 00 0F 46 00 00 00 00 00 00 A7
+                  ^^ byte 6 = 0x4B = 75%
+                     ^^ byte 7 = 0 discharging, non-zero charging
+                        ^^^^^ byte 8-9 = 0x0F46 = 3910 mV, big endian
+```
+
+- byte 5 = `0x02` (2.4G mode), byte 6 = percentage `0..100`,
+  byte 7 = charging flag, bytes 8–9 = pack voltage in mV (big endian).
+  Voltage is only trusted when `2000 < mV < 5000`.
+- The same collection carries unrelated frames that also start with
+  `08 04`; the whole-frame checksum is mandatory, otherwise garbage values
+  such as 116 / 123 / 127 leak through as percentages.
+- Some firmware revisions answer with the descriptor's `0x09` INPUT report
+  ID instead of `0x08`; the parser accepts both.
+- Verified live on 2026-11-14: `75%`, `3910 mV`, discharging.
+- The same frame family covers ATK F1/X1, VXE MAD R, VGN F1 Pro, Dareu and
+  G-Wolves receivers. References (MIT): `435311382/Volt`,
+  `GyroZeppel1/atk-battery`, `kun-qaq/wireless-battery-tray`.
 
 ## Juxing (AUSDOM G03 Pro 8K)
 
@@ -117,3 +157,15 @@ References (MIT):
 Some Compx receivers expose a feature report `0x06` with values that look like
 battery levels. Do not use it without verification: on several keyboards those
 bytes are fixed firmware parameters and never change with the real battery.
+
+Measured on 2026-11-14:
+
+- `3554:FA09` (`FF04/0002`) returns `06 00 02 00 F5 00 5F 8E`, where byte 6
+  is `0x5F` = 95 — while the same keyboard answered **84%** (`0x54`) over
+  BYCOMBO at the same moment. Not a battery level.
+- `25A7:FA70` (`FF02/0002`) returns `06 00 02 00 00 00 70 08`, byte-identical
+  across repeated reads and after several `HidD_SetFeature` queries; only
+  byte 1 echoes the last written value. It is a static config register, and
+  `0x70` = 112 is outside the percentage range.
+
+A value that never changes is not a battery reading.

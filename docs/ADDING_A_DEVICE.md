@@ -28,7 +28,11 @@ bin\x64\hid-probe.exe --send 3554 FA09 FF02 0002 "13 05 01 00 00 00 00 00 00 00 
 ```
 
 The first byte of the frame is the report ID. The tool pads to the interface's
-output report length.
+output report length. If the receiver exposes several collections with the
+same usage, append `--len <decimal bytes>` to pick one by report length, and
+use `--set-feature` / `--get-input` for feature-only or input-only collections.
+For example the ATK A9 Plus 2.0 receiver has both 20-byte and 17-byte
+`FF02/0002` collections; only `--len 17` answers the battery frame.
 
 ## 4. Add the descriptor
 
@@ -38,18 +42,25 @@ Edit `src/core/DeviceRegistry.cpp`:
 m_devices.push_back(DeviceDescriptor{
     L"vendor_model", L"Vendor Model", L"Vendor",
     DeviceKind::Mouse, 0x1234, 0x5678, 0xFF00, 0x0002,
-    L"example_protocol", 30, true, L"VM"
+    L"example_protocol", 30, true, L"VM", 0   // reportLength, 0 = first match
 });
 ```
 
-Keep the ID ASCII and stable: it becomes the TrafficMonitor
-`plugin_display_item` key.
+Set the trailing `reportLength` when several collections share the same usage
+so `HidDevice::Open` and `IProtocol::IsPresent` both target the right one.
+
+Keep the ID ASCII and stable: it names the INI section and identifies the
+battery group inside the plugin's single item. TrafficMonitor itself only ever
+sees the fixed item ID `peripheral_battery`. Adding a descriptor does not
+rewrite the user's INI or change the host's display item list.
 
 ## 5. Add the protocol
 
 - If the device matches an existing family, extend that parser.
 - Otherwise add `src/protocols/YourProtocol.h/.cpp` implementing `IProtocol`.
 - Register it in `src/protocols/ProtocolRegistry.cpp`.
+- For non-HID transports, override `IProtocol::IsPresent()` so discovery can
+  detect the receiver/service; the default matches HID VID/PID/usage.
 - Keep framing/parsing in static helpers so they can be tested without hardware.
 
 ## 6. Add tests and docs

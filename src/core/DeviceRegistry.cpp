@@ -55,6 +55,25 @@ namespace pb
             L"B87"
         });
 
+        // ATK Dragonfly A9 Plus 2.0 NANO / NearLink receiver. It exposes two
+        // FF02/0002 collections (20 and 17 bytes); the Compx 17-byte battery
+        // frame is only accepted by the 17-byte one, hence reportLength.
+        m_devices.push_back(DeviceDescriptor{
+            L"atk_a9_plus_2",
+            L"ATK Dragonfly A9 Plus 2.0",
+            L"ATK",
+            DeviceKind::Mouse,
+            0x373B,
+            0x10C9,
+            0xFF02,
+            0x0002,
+            L"compx_17",
+            40,
+            true,
+            L"A9+",
+            17
+        });
+
         // Add new devices here. Keep IDs ASCII and stable, because they are
         // written to the TrafficMonitor plugin_display_item configuration.
 

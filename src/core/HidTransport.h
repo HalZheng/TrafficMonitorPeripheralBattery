@@ -38,8 +38,14 @@ namespace pb
         HidDevice(const HidDevice&) = delete;
         HidDevice& operator=(const HidDevice&) = delete;
 
+        /**
+         * reportLength selects one collection when a receiver exposes several
+         * with the same usage (for example ATK dongles with both 20-byte and
+         * 17-byte vendor collections). 0 keeps the legacy "first match" rule.
+         */
         bool Open(unsigned short vid, unsigned short pid,
-            unsigned short usagePage, unsigned short usage, bool overlapped = true);
+            unsigned short usagePage, unsigned short usage,
+            unsigned short reportLength = 0, bool overlapped = true);
         bool OpenPath(const std::wstring& path, bool overlapped = true);
         void Close();
 
@@ -48,6 +54,8 @@ namespace pb
         bool Write(const std::vector<unsigned char>& data, unsigned int timeoutMs) const;
         bool Read(std::vector<unsigned char>& data, unsigned int timeoutMs) const;
         bool GetFeature(std::vector<unsigned char>& data) const;
+        bool SetFeature(const std::vector<unsigned char>& data) const;
+        bool GetInputReport(std::vector<unsigned char>& data) const;
 
         const HidInterfaceInfo& Info() const { return m_info; }
         unsigned short InputLength() const { return m_info.inputLength; }

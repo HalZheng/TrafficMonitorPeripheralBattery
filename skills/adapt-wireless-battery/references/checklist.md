@@ -39,7 +39,8 @@
 
 - [ ] Value matches the vendor UI (or a plausible value when no UI exists).
 - [ ] Value changes with real use.
-- [ ] Device off shows `--` or a configured offline state.
+- [ ] Device off keeps the last-known level with an offline badge, or shows `--`
+      when it never reported one.
 - [ ] TrafficMonitor does not freeze while the device sleeps.
 - [ ] x64 and x86 builds both load.
 

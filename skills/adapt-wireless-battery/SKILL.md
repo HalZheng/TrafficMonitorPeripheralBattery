@@ -102,7 +102,7 @@ Add one entry to `src/core/DeviceRegistry.cpp`:
 
 ```cpp
 m_devices.push_back(DeviceDescriptor{
-    L"vendor_model",          // stable ASCII item ID
+    L"vendor_model",          // stable ASCII device ID (INI section key)
     L"Vendor Model",          // display name
     L"Vendor",                // brand
     DeviceKind::Mouse,        // Mouse / Keyboard / Gamepad / Headset / Other
@@ -110,13 +110,15 @@ m_devices.push_back(DeviceDescriptor{
     0xFF00, 0x0002,           // usage page / usage
     L"protocol_id",           // registered protocol
     30,                       // default priority (lower = earlier)
-    true,                     // enabled by default
+    true,                     // visible by default (not hidden)
     L"VM"                     // short taskbar label
 });
 ```
 
-The `id` becomes the TrafficMonitor `plugin_display_item` key. Never rename an
-existing ID without a migration note.
+TrafficMonitor only sees one permanent plugin item (`peripheral_battery`), so
+the device ID is internal: it names the INI section and identifies the battery
+group drawn inside that item. Never rename an existing ID without a migration
+note. Adding a descriptor does not rewrite the user's INI.
 
 ### 6. Add or extend the protocol
 
@@ -124,6 +126,9 @@ existing ID without a migration note.
   a fixture instead of creating a new class.
 - Otherwise implement `IProtocol` in `src/protocols/` and register it in
   `ProtocolRegistry.cpp`.
+- If the transport is not HID, override `IProtocol::IsPresent()`. The default
+  matches enumerated HID interfaces by VID/PID/usage, and a non-HID device
+  would otherwise never be discovered.
 - Keep framing, checksum, and parsing in pure static helpers so they can be unit
   tested without hardware.
 
@@ -162,10 +167,12 @@ bin\x64\protocol_tests.exe
 
 1. Build `x64` and `x86`.
 2. Copy the matching DLL to TrafficMonitor `plugins`.
-3. Add the item ID to `plugin_display_item` or enable it in
-   "任务栏窗口 -> 显示设置".
-4. Confirm the value changes when the device is used and becomes `--` when the
-   device is powered off.
+3. Make sure「无线外设电量」is ticked in "任务栏窗口 -> 显示设置" (one item
+   for all devices; only needed once).
+4. Confirm the value changes when the device is used; with `keep_last_known`
+   on, powering the device off keeps the last level plus an offline badge, and
+   a device that never reported a level shows `--` until the grace window
+   expires.
 5. Check that a sleeping device does not freeze TrafficMonitor.
 
 ### 9. Update documentation

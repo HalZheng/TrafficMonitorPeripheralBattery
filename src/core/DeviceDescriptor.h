@@ -23,7 +23,7 @@ namespace pb
      */
     struct DeviceDescriptor
     {
-        std::wstring id;            // Stable plugin item ID, ASCII only.
+        std::wstring id;            // Stable device ID, ASCII only (INI section key).
         std::wstring name;          // Human-readable model name.
         std::wstring vendor;        // Brand.
         DeviceKind kind = DeviceKind::Other;
@@ -35,5 +35,10 @@ namespace pb
         int priority = 100;         // Lower value sorts first.
         bool enabledByDefault = true;
         std::wstring defaultLabel;  // Short taskbar label.
+
+        // Expected input/output report length of the vendor collection.
+        // Some receivers expose several collections with the same usage; use
+        // this to pin the one the protocol actually talks to. 0 = first match.
+        unsigned short reportLength = 0;
     };
 }

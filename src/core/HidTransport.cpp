@@ -20,11 +20,12 @@ namespace pb
         std::map<std::wstring, std::wstring> g_pathCache;
 
         std::wstring CacheKey(unsigned short vid, unsigned short pid,
-            unsigned short usagePage, unsigned short usage)
+            unsigned short usagePage, unsigned short usage,
+            unsigned short reportLength)
         {
-            wchar_t buffer[64] = {};
-            swprintf_s(buffer, L"%04X:%04X:%04X:%04X",
-                vid, pid, usagePage, usage);
+            wchar_t buffer[80] = {};
+            swprintf_s(buffer, L"%04X:%04X:%04X:%04X:%u",
+                vid, pid, usagePage, usage, reportLength);
             return buffer;
         }
 
@@ -103,9 +104,10 @@ namespace pb
     }
 
     bool HidDevice::Open(unsigned short vid, unsigned short pid,
-        unsigned short usagePage, unsigned short usage, bool overlapped)
+        unsigned short usagePage, unsigned short usage,
+        unsigned short reportLength, bool overlapped)
     {
-        const std::wstring key = CacheKey(vid, pid, usagePage, usage);
+        const std::wstring key = CacheKey(vid, pid, usagePage, usage, reportLength);
 
         // Reuse the last known device path. SetupAPI enumeration is expensive
         // and opens every HID interface, so only fall back to it when the
@@ -124,6 +126,13 @@ namespace pb
             if (info.vid == vid && info.pid == pid &&
                 info.usagePage == usagePage && info.usage == usage)
             {
+                // A symmetric collection matches both lengths; a one-way
+                // collection (input-only or output-only) matches on the side
+                // it actually exposes.
+                if (reportLength != 0 &&
+                    info.inputLength != reportLength &&
+                    info.outputLength != reportLength)
+                    continue;
                 if (OpenPath(info.path, overlapped))
                 {
                     StorePath(key, info.path);
@@ -268,6 +277,23 @@ namespace pb
         if (m_handle == INVALID_HANDLE_VALUE || data.empty())
             return false;
         return HidD_GetFeature(m_handle, data.data(), static_cast<ULONG>(data.size())) != FALSE;
+    }
+
+    bool HidDevice::SetFeature(const std::vector<unsigned char>& data) const
+    {
+        if (m_handle == INVALID_HANDLE_VALUE || data.empty())
+            return false;
+        return HidD_SetFeature(m_handle,
+            const_cast<unsigned char*>(data.data()),
+            static_cast<ULONG>(data.size())) != FALSE;
+    }
+
+    bool HidDevice::GetInputReport(std::vector<unsigned char>& data) const
+    {
+        if (m_handle == INVALID_HANDLE_VALUE || data.empty())
+            return false;
+        return HidD_GetInputReport(m_handle, data.data(),
+            static_cast<ULONG>(data.size())) != FALSE;
     }
 
     std::vector<HidInterfaceInfo> EnumerateHidInterfaces()

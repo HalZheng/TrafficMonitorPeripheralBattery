@@ -17,6 +17,9 @@ namespace pb
     {
         bool found = false;
         bool online = false;
+        // True when this reading is the cached last-known value rather than a
+        // fresh measurement (the device is asleep or no longer answering).
+        bool stale = false;
         int percent = -1;
         ChargeState charge = ChargeState::Unknown;
         int voltageMv = -1;

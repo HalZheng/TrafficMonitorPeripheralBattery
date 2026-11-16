@@ -1,4 +1,5 @@
 #include "protocols/AulaBycomboProtocol.h"
+#include "protocols/Compx17Protocol.h"
 #include "protocols/FlydigiPipeProtocol.h"
 #include "protocols/JuxingProtocol.h"
 
@@ -68,6 +69,48 @@ int main()
     Check(JuxingProtocol::ParseResponse(juxingResponse, juxingReading),
         "juxing reply parsed");
     Check(juxingReading.percent == 68, "juxing battery is 68%");
+
+    // Compx 17-byte battery frame, captured live from the ATK Dragonfly A9
+    // Plus 2.0 NANO receiver (373B:10C9, FF02/0002 17-byte collection).
+    std::vector<unsigned char> compxRequest = Compx17Protocol::BuildRequest(17);
+    Check(compxRequest.size() == 17, "compx17 request length");
+    Check(compxRequest[0] == 0x08 && compxRequest[1] == 0x04 &&
+        compxRequest[16] == 0x49, "compx17 request header and checksum");
+    Check(Compx17Protocol::BuildRequest(20).empty(),
+        "compx17 rejects the 20-byte collection");
+
+    std::vector<unsigned char> compxReply = {
+        0x08, 0x04, 0x00, 0x00, 0x00, 0x02, 0x4B, 0x00, 0x0F, 0x46,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA7
+    };
+    BatteryReading compxReading;
+    Check(Compx17Protocol::ParseResponse(compxReply, compxReading),
+        "compx17 reply parsed");
+    Check(compxReading.percent == 75, "compx17 battery is 75%");
+    Check(compxReading.voltageMv == 3910, "compx17 pack voltage is 3910 mV");
+    Check(compxReading.charge == ChargeState::Discharging,
+        "compx17 discharging flag");
+
+    std::vector<unsigned char> badChecksum = compxReply;
+    badChecksum[16] ^= 0x01;
+    BatteryReading badReading;
+    Check(!Compx17Protocol::ParseResponse(badChecksum, badReading),
+        "compx17 rejects a bad checksum");
+
+    std::vector<unsigned char> wrongPrefix = compxReply;
+    wrongPrefix[1] = 0x05;
+    wrongPrefix[16] = static_cast<unsigned char>(wrongPrefix[16] - 1);
+    BatteryReading wrongReading;
+    Check(!Compx17Protocol::ParseResponse(wrongPrefix, wrongReading),
+        "compx17 rejects a wrong command prefix");
+
+    // Some firmware answers with the descriptor's 0x09 INPUT report id.
+    std::vector<unsigned char> reply09 = compxReply;
+    reply09[0] = 0x09;
+    reply09[16] = 0xA6; // keeps the whole-frame sum at 0x55
+    BatteryReading reading09;
+    Check(Compx17Protocol::ParseResponse(reply09, reading09) &&
+        reading09.percent == 75, "compx17 accepts the 0x09 reply id");
 
     // Flydigi Space Station IpcResult -> getConnectedDevices -> DeviceInfo.
     std::vector<unsigned char> deviceInfo = {

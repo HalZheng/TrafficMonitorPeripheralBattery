@@ -32,6 +32,8 @@ namespace pb
 
         const wchar_t* Id() const override { return L"flydigi_pipe"; }
         BatteryReading Read(const DeviceDescriptor& device) const override;
+        bool IsPresent(const DeviceDescriptor& device,
+            const std::vector<HidInterfaceInfo>& interfaces) const override;
 
         /**
          * Parse a complete IpcResult protobuf payload.

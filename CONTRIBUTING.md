@@ -37,7 +37,8 @@ Please test both x64 and x86 when changing the plugin layer.
   thread.
 - Protocol readers are read-only. Do not send firmware-update, reset or pairing
   commands.
-- Keep item IDs stable and ASCII; they are persisted in TrafficMonitor config.
+- Keep device IDs stable and ASCII; they name INI sections and identify battery
+  groups. TrafficMonitor only sees the fixed item ID `peripheral_battery`.
 - Add a test fixture for every new response parser.
 - Do not commit vendor binaries, captures containing MAC addresses/serials, or
   personal data.

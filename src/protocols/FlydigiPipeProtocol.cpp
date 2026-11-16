@@ -411,6 +411,15 @@ namespace pb
         return ParseDeviceList(deviceList, devices);
     }
 
+    bool FlydigiPipeProtocol::IsPresent(const DeviceDescriptor&,
+        const std::vector<HidInterfaceInfo>&) const
+    {
+        // The Space Station service owns a named pipe, not a HID collection.
+        // WaitNamedPipeW with a short timeout only checks that an instance
+        // exists; it never consumes a message or blocks the polling thread.
+        return WaitNamedPipeW(kPipeName, 20) != 0;
+    }
+
     BatteryReading FlydigiPipeProtocol::Read(const DeviceDescriptor&) const
     {
         BatteryReading reading;

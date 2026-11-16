@@ -1,6 +1,7 @@
 #include "ProtocolRegistry.h"
 
 #include "AulaBycomboProtocol.h"
+#include "Compx17Protocol.h"
 #include "FlydigiPipeProtocol.h"
 #include "JuxingProtocol.h"
 
@@ -16,6 +17,7 @@ namespace pb
     {
         Register(std::unique_ptr<IProtocol>(new JuxingProtocol()));
         Register(std::unique_ptr<IProtocol>(new AulaBycomboProtocol()));
+        Register(std::unique_ptr<IProtocol>(new Compx17Protocol()));
         Register(std::unique_ptr<IProtocol>(new FlydigiPipeProtocol()));
     }
 
