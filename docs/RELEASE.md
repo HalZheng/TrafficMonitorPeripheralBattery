@@ -63,8 +63,10 @@ contains the x64/x86 DLLs, README, LICENSE, NOTICE, CHANGELOG, `docs/*.md`
 
 ## GitHub Actions
 
-`.github/workflows/build.yml` builds x64 and x86 on `windows-latest`, runs all
-tests for x64, and uploads the DLLs as artifacts on every push and pull
-request. Pushing a `v*` tag additionally runs the `release` job: it verifies
-the tag matches the CMake version, downloads both artifacts, runs
-`scripts\package.ps1` and creates a GitHub Release with the zip attached.
+`.github/workflows/build.yml` builds x64 and x86 on `windows-latest` with the
+MSVC toolchain (Ninja generator, so it does not depend on a specific Visual
+Studio version), runs all tests for x64, and uploads the DLLs as artifacts on
+every push and pull request. Pushing a `v*` tag additionally runs the
+`release` job: it verifies the tag matches the CMake version, downloads both
+artifacts, runs `scripts\package.ps1` and creates a GitHub Release with the
+zip attached.
