@@ -2,6 +2,9 @@ $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
 $dist = Join-Path $root 'dist'
+if (Test-Path $dist) {
+    Remove-Item $dist -Recurse -Force
+}
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 
 $cmakeLists = Get-Content (Join-Path $root 'CMakeLists.txt') -Raw
@@ -33,11 +36,22 @@ foreach ($name in @('README.md', 'LICENSE', 'NOTICE.md', 'CHANGELOG.md')) {
     }
 }
 
-$images = Join-Path $root 'docs\images'
-if (Test-Path $images) {
-    $target = Join-Path $dist 'docs\images'
+$docs = Join-Path $root 'docs'
+if (Test-Path $docs) {
+    $target = Join-Path $dist 'docs'
     New-Item -ItemType Directory -Force -Path $target | Out-Null
-    Copy-Item (Join-Path $images '*') $target -Force
+    Copy-Item (Join-Path $docs '*.md') $target -Force
+    $images = Join-Path $docs 'images'
+    if (Test-Path $images) {
+        $imageTarget = Join-Path $target 'images'
+        New-Item -ItemType Directory -Force -Path $imageTarget | Out-Null
+        Copy-Item (Join-Path $images '*') $imageTarget -Force
+    }
+}
+
+$licenses = Join-Path $root 'LICENSES'
+if (Test-Path $licenses) {
+    Copy-Item $licenses (Join-Path $dist 'LICENSES') -Recurse -Force
 }
 
 $zip = Join-Path $dist "PeripheralBatteryPlugin-$version.zip"
